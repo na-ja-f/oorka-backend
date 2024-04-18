@@ -176,34 +176,125 @@ const googleAuth = asyncHandler(async (req, res) => {
 // * Public
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-  
+
     const user = await User.findOne({ email });
-  
-  
+
+
     if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        message: "Login Successful",
-        _id: user.id,
-        username: user.name,
-        email: user.email,
-        profileImg: user.profileImg,
-        savedPost: user.savedPost,
-        bio: user.bio,
-        phone: user.phone,
-        isPrivate: user.isPrivate,
-        isVerified:user.isVerified,
-        token: generateToken(user.id),
-      });
+        res.json({
+            message: "Login Successful",
+            _id: user.id,
+            username: user.name,
+            email: user.email,
+            profileImg: user.profileImg,
+            savedPost: user.savedPost,
+            bio: user.bio,
+            phone: user.phone,
+            isPrivate: user.isPrivate,
+            isVerified: user.isVerified,
+            token: generateToken(user.id),
+        });
     } else {
-      res.status(400);
-      throw new Error("Invalid Credentials");
+        res.status(400);
+        throw new Error("Invalid Credentials");
     }
-  });
+});
+
+// ! forgot password
+// ? POST /forgot-password
+// * public
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body
+    console.log("hello",email);
+    const user = await User.findOne({ email })
+
+    if (!user) {
+        res.status(400)
+        throw new Error('user not found')
+    }
+
+    const otp = speakeasy.totp({
+        secret: speakeasy.generateSecret({ length: 20 }).base32,
+        digits: 4
+    })
+
+    const sessionData = req.session
+    sessionData.otp = otp
+    sessionData.otpGeneratedTime = Date.now()
+    sessionData.email = email
+    sendMail(req, user.username, user.email)
+    console.log(otp);
+
+    res.status(200).json({ message: "otp sent", email })
+
+})
+
+// ! forgot password otp verification
+// ? POST /forgot-otp
+// * public
+const forgotPasswordOtp = asyncHandler(async (req, res) => {
+    const { otp } = req.body
+    if (!otp) {
+        res.status(400)
+        throw new Error('provide an otp')
+    }
+    const sessionData = req.session
+    const storedotp = sessionData.otp
+    console.log(storedotp);
+    if (!storedotp || otp !== storedotp) {
+        res.status(400)
+        throw new Error('invalid otp')
+    }
+
+    const otpGeneratedTime = sessionData.otpGeneratedTime || 0
+    const currentTime = Date.now()
+    const otpExpirationTime = 60 * 1000;
+    if (currentTime - otpGeneratedTime > otpExpirationTime) {
+        res.status(400)
+        throw new Error('otp expired')
+    }
+
+    delete sessionData.otp
+    delete sessionData.otpGeneratedTime
+
+    res.status(200).json({
+        message: "otp has been verified , reset password",
+        email: sessionData?.email
+    })
+})
+
+// ! rest password
+// ? POST /reset-password
+// * public
+const resetPassword = asyncHandler(async (req, res) => {
+    const { password } = req.body;
+
+    const sessionData = req.session
+    const email = sessionData.email
+    const user = await User.findOne({ email })
+    if (!user) {
+        res.status(400);
+        throw new Error("User Not Found");
+    }
+
+    // ? hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+    user.password = passwordHash
+    await user.save()
+
+    res.status(200).json({message:"password reseted succesfully"})
+
+})
+
+
 
 module.exports = {
     registerUser,
     verifyOTP,
     resendOtp,
     googleAuth,
-    loginUser
+    loginUser,
+    forgotPassword,
+    forgotPasswordOtp,
+    resetPassword
 }
