@@ -5,8 +5,6 @@ const connectDB = require('./config/db')
 const errorHandler = require('./middlewares/errorMiddleware')
 const cors = require('cors');
 const session = require("express-session")
-// ! routes imports
-const userRoutes = require('./routes/userRoutes')
 
 const app = express()
 
@@ -40,6 +38,7 @@ const port = process.env.PORT || 5000
 
 // ! routes
 app.use('/api/', require('./routes/userRoutes'))
+app.use('/api/post', require('./routes/postRoutes'))
 
 // ! error middleware
 app.use(errorHandler)
