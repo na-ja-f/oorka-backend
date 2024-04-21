@@ -92,9 +92,25 @@ const updatePost = asyncHandler(async (req, res) => {
     res.status(200).json(posts)
 })
 
+// ! get user posts
+// ? get /post/get-post
+const getUserPost = asyncHandler(async (req, res) => {
+    const id = req.params.userId;
+
+    const posts = await Post.find({ userId: id, isDeleted: false })
+        .populate({
+            path: "userId",
+            select: "name profileImg isVerified"
+        }).sort({ date: -1 })
+    res.status(200).json(posts)
+})
+
+
+
 module.exports = {
     addPost,
     getPosts,
     deletePost,
-    updatePost
+    updatePost,
+    getUserPost
 }

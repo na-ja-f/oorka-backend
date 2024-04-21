@@ -39,6 +39,7 @@ const port = process.env.PORT || 5000
 // ! routes
 app.use('/api/', require('./routes/userRoutes'))
 app.use('/api/post', require('./routes/postRoutes'))
+app.use('/api/admin', require('./routes/adminRoutes'))
 
 // ! error middleware
 app.use(errorHandler)
