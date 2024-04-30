@@ -12,6 +12,7 @@ const userSchema = mongoose.Schema({
     },
     phone: {
         type: Number,
+        default: 0
     },
     password: {
         type: String,
@@ -23,6 +24,7 @@ const userSchema = mongoose.Schema({
     },
     bio: {
         type: String,
+        default: ""
     },
     savedPost: {
         type: Array,
@@ -46,7 +48,7 @@ const userSchema = mongoose.Schema({
     isGoogle: {
         type: Boolean,
         default: false
-    }, 
+    },
 },
     {
         timestamps: true

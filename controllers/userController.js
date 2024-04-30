@@ -4,6 +4,7 @@ const speakeasy = require('speakeasy')
 const bcrypt = require('bcryptjs')
 // ! models
 const User = require('../models/userModel')
+const Connections = require('../models/connectionModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
 const sendMail = require('../utils/sendMail')
@@ -68,6 +69,10 @@ const verifyOTP = asyncHandler(async (req, res) => {
         email: userDetails.email,
         password: userDetails.password,
     });
+
+    await Connections.create({
+        userId: user._id
+    })
 
     delete sessionData.userDetails;
     delete sessionData.otp;
@@ -150,6 +155,10 @@ const googleAuth = asyncHandler(async (req, res) => {
             isGoogle: true,
         });
 
+        await Connections.create({
+            userId: newUser._id
+        })
+
         const token = generateToken(newUser.id);
 
         res.status(200).json({
@@ -205,7 +214,7 @@ const loginUser = asyncHandler(async (req, res) => {
 // * public
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body
-    console.log("hello",email);
+    console.log("hello", email);
     const user = await User.findOne({ email })
 
     if (!user) {
@@ -282,8 +291,66 @@ const resetPassword = asyncHandler(async (req, res) => {
     user.password = passwordHash
     await user.save()
 
-    res.status(200).json({message:"password reseted succesfully"})
+    res.status(200).json({ message: "password reseted succesfully" })
 
+})
+
+// ! get user details
+// ? GET /user-details
+const getUserDetails = asyncHandler(async (req, res) => {
+    console.log('he');
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+    const connections = await Connections.findOne({ userId })
+    console.log(connections);
+    if (user) {
+        res.status(200).json({ user, connections })
+    } else {
+        res.status(404)
+        throw new Error("user not found")
+    }
+
+})
+
+// ! edit profile
+// ? PATCH /edit-profile
+const editProfile = asyncHandler(async (req, res) => {
+    const { userId, image, name, phone, bio, isPrivate } = req.body;
+    const user = await User.findById(userId)
+    if (!user) {
+        res.status(404)
+        throw new Error("user not found")
+    }
+
+    if (name) user.name = name
+    if (image) user.profileImg = image
+    if (phone) user.phone = phone
+    if (bio) user.bio = bio
+    if (isPrivate !== undefined) user.isPrivate = isPrivate
+
+    await user.save();
+
+
+    res.status(200).json({
+        _id: user.id,
+        username: user.name,
+        email: user.email,
+        profileImg: user.profileImg,
+        savedPost: user.savedPost,
+        bio: user.bio,
+        phone: user.phone,
+        isPrivate: user.isPrivate,
+        isVerified: user.isVerified,
+        token: generateToken(user.id)
+    })
+})
+
+// ! search users
+// ? POST /search-users
+const searchedUser = asyncHandler(async (req, res) => {
+    const users = await User.find({},{name: 1, profileImg: 1});
+    res.status(200).json({users})
+    
 })
 
 
@@ -296,5 +363,8 @@ module.exports = {
     loginUser,
     forgotPassword,
     forgotPasswordOtp,
-    resetPassword
+    resetPassword,
+    getUserDetails,
+    editProfile,
+    searchedUser
 }

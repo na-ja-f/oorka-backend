@@ -3,6 +3,7 @@ const asyncHandler = require('express-async-handler')
 // ! models
 const Post = require('../models/postModel')
 const User = require('../models/userModel')
+const Connections = require('../models/connectionModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
 
@@ -46,8 +47,21 @@ const addPost = asyncHandler(async (req, res) => {
 // ? GET /post/get-post
 const getPosts = asyncHandler(async (req, res) => {
     const { userId } = req.body
-    const users = await User.find({ userId })
-    const posts = await Post.find({ isDeleted: false })
+
+    const connections = await Connections.findOne({ userId }, { following: 1 })
+    const followingUsers = connections?.following
+
+    const usersQuery = { _id: { $in: followingUsers } };
+    const users = await User.find(usersQuery)
+    const userIds = users.map((user) => user._id)
+
+    const postsQuery = {
+        userId: { $in: [...userIds, userId] },
+        isBlocked: false,
+        isDeleted: false
+    }
+
+    const posts = await Post.find(postsQuery)
         .populate({
             path: "userId",
             select: "name profileImg isVerified"

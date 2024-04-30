@@ -10,7 +10,10 @@ const { registerUser,
     loginUser,
     forgotPassword,
     forgotPasswordOtp,
-    resetPassword
+    resetPassword,
+    getUserDetails,
+    editProfile,
+    searchedUser
 } = require('../controllers/userController')
 // ! validations
 const { registerValidation, otpValidation, userLoginValidation } = require('../validations/userValidations')
@@ -23,6 +26,9 @@ router.post('/login', userLoginValidation, loginUser)
 router.post('/forgot-password', forgotPassword)
 router.post('/forgot-otp', forgotPasswordOtp)
 router.post('/reset-password', resetPassword)
+router.get('/user-details/:userId', getUserDetails)
+router.patch('/edit-profile', editProfile)
+router.post('/search-users',searchedUser)
 
 
 module.exports = router
