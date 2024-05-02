@@ -15,6 +15,8 @@ const addPost = asyncHandler(async (req, res) => {
         userId,
         imageUrls,
         description,
+        hideLikes,
+        hideComment,
     } = req.body
 
     if (!userId || !imageUrls) {
@@ -25,7 +27,9 @@ const addPost = asyncHandler(async (req, res) => {
     const post = await Post.create({
         userId,
         imageUrl: imageUrls,
-        description
+        description,
+        hideComment,
+        hideLikes,
     })
 
     if (!post) {
@@ -65,6 +69,10 @@ const getPosts = asyncHandler(async (req, res) => {
         .populate({
             path: "userId",
             select: "name profileImg isVerified"
+        })
+        .populate({
+            path: "likes",
+            select: "name profileImg isVerified"
         }).sort({ date: -1 })
 
     res.status(200).json(posts)
@@ -90,12 +98,14 @@ const deletePost = asyncHandler(async (req, res) => {
 // ? PUT /post/update-post
 const updatePost = asyncHandler(async (req, res) => {
     const postId = req.body.postId
-    const { userId, description } = req.body
+    const { userId, description, hideComment, hideLikes } = req.body
     const post = await Post.findById(postId)
 
     if (description) {
         post.description = description
     }
+    if (hideComment !== undefined) post.hideComment = hideComment;
+    if (hideLikes !== undefined) post.hideLikes = hideLikes;
 
     await post.save()
     const posts = await Post.find({ isDeleted: false })
@@ -119,6 +129,48 @@ const getUserPost = asyncHandler(async (req, res) => {
     res.status(200).json(posts)
 })
 
+// ! like posts
+// ? get /post/get-post
+const likePost = asyncHandler(async (req, res) => {
+    const { postId, userId } = req.body;
+    const post = await Post.findById(postId)
+
+    if (!post) {
+        res.status(404)
+        throw new Error("Post not found")
+    }
+    const isLiked = post.likes.includes(userId);
+
+    if (isLiked) {
+        await Post.findOneAndUpdate(
+            { _id: postId },
+            { $pull: { likes: userId } },
+            { new: true }
+        )
+    } else {
+        await Post.findOneAndUpdate(
+            { _id: postId },
+            { $push: { likes: userId } },
+            { new: true }
+        )
+    }
+
+    const posts = await Post.find({
+        userId: userId,
+        isBlocked: false,
+        isDeleted: false,
+    })
+        .populate({
+            path: "userId",
+            select: "name profileImg isVerified"
+        })
+        .sort({ date: -1 })
+
+    res.status(200).json({ posts })
+})
+
+
+
 
 
 module.exports = {
@@ -126,5 +178,6 @@ module.exports = {
     getPosts,
     deletePost,
     updatePost,
-    getUserPost
+    getUserPost,
+    likePost
 }

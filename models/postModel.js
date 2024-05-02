@@ -22,6 +22,10 @@ const postSchema = mongoose.Schema({
         type: [String],
         default: []
     },
+    likes: {
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        default: []
+    },
     isHidden: {
         type: Boolean,
         default: false
