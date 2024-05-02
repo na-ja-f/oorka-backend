@@ -55,6 +55,7 @@ const getPosts = asyncHandler(async (req, res) => {
     const connections = await Connections.findOne({ userId }, { following: 1 })
     const followingUsers = connections?.following
 
+
     const usersQuery = { _id: { $in: followingUsers } };
     const users = await User.find(usersQuery)
     const userIds = users.map((user) => user._id)
@@ -65,6 +66,7 @@ const getPosts = asyncHandler(async (req, res) => {
         isDeleted: false
     }
 
+
     const posts = await Post.find(postsQuery)
         .populate({
             path: "userId",
@@ -74,7 +76,6 @@ const getPosts = asyncHandler(async (req, res) => {
             path: "likes",
             select: "name profileImg isVerified"
         }).sort({ date: -1 })
-
     res.status(200).json(posts)
 })
 
@@ -83,7 +84,6 @@ const getPosts = asyncHandler(async (req, res) => {
 const deletePost = asyncHandler(async (req, res) => {
     const { postId, userId } = req.body
     const post = await Post.findById(postId)
-    // console.log(post);
     post.isDeleted = true
     await post.save()
     const posts = await Post.find({ isDeleted: false })
@@ -169,6 +169,61 @@ const likePost = asyncHandler(async (req, res) => {
     res.status(200).json({ posts })
 })
 
+// ! save posts
+// ? POST /post/save-post
+const savePost = asyncHandler(async (req, res) => {
+    const { postId, userId } = req.body;
+    const user = await User.findById(userId)
+
+    if (!user) {
+        res.status(404)
+        throw new Error("user not found")
+    }
+    const isSaved = user.savedPost.includes(postId);
+
+    if (isSaved) {
+        await User.findOneAndUpdate(
+            { _id: userId },
+            { $pull: { savedPost: postId } },
+            { new: true }
+        )
+    } else {
+        await User.findOneAndUpdate(
+            { _id: userId },
+            { $push: { savedPost: postId } },
+            { new: true }
+        )
+    }
+
+    const userData = await User.find({ userId: userId, isBlocked: false }).sort(
+        { date: -1 }
+    );
+    res.status(200).json({
+        _id: user.id,
+        username: user.name,
+        email: user.email,
+        profileImg: user.profileImg,
+        savedPost: user.savedPost,
+        token: generateToken(user.id),
+    });
+})
+
+// ! like posts
+// ? get /post/get-post
+const getSavedPost = asyncHandler(async (req, res) => {
+    const id = req.params.userId
+    const user = await User.findOne({ _id: id, isBlocked: false }, { savedPost: 1, _id: 0 })
+    if (user) {
+        const savedPostIds = user.savedPost;
+        const posts = await Post.find({ _id: { $in: savedPostIds } })
+            .populate("userId")
+        res.status(200).json(posts)
+    } else {
+        res.status(400);
+        throw new Error("User Not Found");
+    }
+})
+
 
 
 
@@ -179,5 +234,7 @@ module.exports = {
     deletePost,
     updatePost,
     getUserPost,
-    likePost
+    likePost,
+    savePost,
+    getSavedPost
 }
