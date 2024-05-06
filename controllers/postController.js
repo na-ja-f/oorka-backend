@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler')
 const Post = require('../models/postModel')
 const User = require('../models/userModel')
 const Connections = require('../models/connectionModel')
+const Report = require('../models/reportModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
 
@@ -224,6 +225,39 @@ const getSavedPost = asyncHandler(async (req, res) => {
     }
 })
 
+// ! report posts
+// ? POST /post/report-post
+const reportPost = asyncHandler(async (req, res) => {
+    const { userId, postId, cause } = req.body;
+
+    const existingReport = await Report.findOne({ userId, postId });
+    if (existingReport) {
+        res.status(400);
+        throw new Error("You have already reported this post.");
+    }
+
+    const report = new Report({
+        userId,
+        postId,
+        cause,
+    });
+
+    await report.save();
+
+    const reportCount = await Report.countDocuments({ postId });
+
+    const max_report_needed = 3;
+    if (reportCount >= max_report_needed) {
+        await Post.findByIdAndUpdate(postId, { isBlocked: true });
+        res
+            .status(200)
+            .json({ message: "Post blocked due to multiple reports." });
+        return;
+    }
+
+    res.status(200).json({ message: "Post has been reported." });
+})
+
 
 
 
@@ -236,5 +270,6 @@ module.exports = {
     getUserPost,
     likePost,
     savePost,
-    getSavedPost
+    getSavedPost,
+    reportPost
 }
