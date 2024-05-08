@@ -13,8 +13,11 @@ const { registerUser,
     resetPassword,
     getUserDetails,
     editProfile,
-    searchedUser
+    searchedUser,
+    getHashtags,
+    userSuggestions
 } = require('../controllers/userController')
+const { getPremiumUserData, initialCheckout, validatePayment } = require('../controllers/checkoutController')
 // ! validations
 const { registerValidation, otpValidation, userLoginValidation } = require('../validations/userValidations')
 
@@ -28,7 +31,14 @@ router.post('/forgot-otp', forgotPasswordOtp)
 router.post('/reset-password', resetPassword)
 router.get('/user-details/:userId', getUserDetails)
 router.patch('/edit-profile', editProfile)
-router.post('/search-users',searchedUser)
+router.post('/search-users', searchedUser)
+router.get("/get-hashtags", getHashtags);
+router.post("/user-suggestions",userSuggestions);
+
+
+router.post('/get-transactions', getPremiumUserData)
+router.post('/checkout-user', initialCheckout)
+router.post('/validate-payment', validatePayment)
 
 
 module.exports = router

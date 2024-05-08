@@ -37,6 +37,9 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    premiumExpiryDate: {
+        type: Date,
+    },
     isBlocked: {
         type: Boolean,
         default: false

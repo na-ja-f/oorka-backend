@@ -18,19 +18,21 @@ const addPost = asyncHandler(async (req, res) => {
         description,
         hideLikes,
         hideComment,
+        hashtag
     } = req.body
 
     if (!userId || !imageUrls) {
         res.status(400)
         throw new Error("fill all fields")
     }
-
+    const hashtagsArray = hashtag.map((tag) => tag.value);
     const post = await Post.create({
         userId,
         imageUrl: imageUrls,
         description,
         hideComment,
         hideLikes,
+        hashtags: hashtagsArray,
     })
 
     if (!post) {
@@ -99,7 +101,7 @@ const deletePost = asyncHandler(async (req, res) => {
 // ? PUT /post/update-post
 const updatePost = asyncHandler(async (req, res) => {
     const postId = req.body.postId
-    const { userId, description, hideComment, hideLikes } = req.body
+    const { userId, description, hideComment, hashtags, hideLikes } = req.body
     const post = await Post.findById(postId)
 
     if (description) {
@@ -107,6 +109,10 @@ const updatePost = asyncHandler(async (req, res) => {
     }
     if (hideComment !== undefined) post.hideComment = hideComment;
     if (hideLikes !== undefined) post.hideLikes = hideLikes;
+    if (hashtags !== undefined) {
+        const hashtagsArray = hashtags.map((tag) => tag.value);
+        post.hashtags = hashtagsArray;
+    }
 
     await post.save()
     const posts = await Post.find({ isDeleted: false })

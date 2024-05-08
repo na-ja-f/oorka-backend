@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs')
 // ! models
 const User = require('../models/userModel')
 const Connections = require('../models/connectionModel')
+const Hashtag = require('../models/hashtagModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
 const sendMail = require('../utils/sendMail')
@@ -193,7 +194,7 @@ const loginUser = asyncHandler(async (req, res) => {
         res.json({
             message: "Login Successful",
             _id: user.id,
-            username: user.name,
+            name: user.name,
             email: user.email,
             profileImg: user.profileImg,
             savedPost: user.savedPost,
@@ -298,7 +299,6 @@ const resetPassword = asyncHandler(async (req, res) => {
 // ! get user details
 // ? GET /user-details
 const getUserDetails = asyncHandler(async (req, res) => {
-    console.log('he');
     const { userId } = req.params;
     const user = await User.findById(userId)
     const connections = await Connections.findOne({ userId })
@@ -348,9 +348,65 @@ const editProfile = asyncHandler(async (req, res) => {
 // ! search users
 // ? POST /search-users
 const searchedUser = asyncHandler(async (req, res) => {
-    const users = await User.find({},{name: 1, profileImg: 1});
-    res.status(200).json({users})
-    
+    const users = await User.find({}, { name: 1, profileImg: 1 });
+    res.status(200).json({ users })
+
+})
+
+// ! get hashtags
+// ? GET /get-hashtags
+const getHashtags = asyncHandler(async (req, res) => {
+    console.log('hello world');
+    const hashtags = await Hashtag.find({ isBlocked: false }).sort({
+        date: -1,
+    });
+    console.log(hashtags);
+    if (hashtags) {
+        res.status(200).json({ hashtags });
+    } else {
+        res.status(404);
+        throw new Error(" No Hashtags Found");
+    }
+
+})
+
+// ! get user suggestion
+// ? GET /get-suggestions
+const userSuggestions = asyncHandler(async (req, res) => {
+    const { userId, searchTerm } = req.body;
+
+    const connection = await Connections.findOne({ userId });
+    if (!connection || (connection?.followers.length === 0 && connection?.following.length === 0)) {
+        let users;
+        if (!searchTerm) {
+            users = await User.find({ _id: { $ne: userId } });
+        } else {
+            users = await User.find({
+                userName: { $regex: searchTerm, $options: "i" },
+                _id: { $ne: userId },
+            });
+        }
+        res.status(200).json({ suggestedUsers: users });
+        return;
+    }
+
+    const followingIds = connection.following.map((user) => user._id);
+    const requestedIds = connection.requestSent.map((user) => user._id);
+
+    let suggestedUsers;
+    if (searchTerm) {
+        suggestedUsers = await User.find({
+            userName: { $regex: searchTerm, $options: "i" },
+            isBlocked: false,
+        }).limit(6).sort({ isVerified: -1 });
+    } else {
+        suggestedUsers = await User.find({
+            _id: { $nin: [...followingIds, ...requestedIds, userId] },
+        }).limit(6).sort({ isVerified: -1 });
+    }
+
+    res.status(200).json({ suggestedUsers });
+
 })
 
 
@@ -366,5 +422,7 @@ module.exports = {
     resetPassword,
     getUserDetails,
     editProfile,
-    searchedUser
+    searchedUser,
+    getHashtags,
+    userSuggestions
 }

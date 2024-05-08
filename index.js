@@ -61,6 +61,7 @@ app.use('/api/post', require('./routes/postRoutes'))
 app.use('/api/admin', require('./routes/adminRoutes'))
 app.use('/api/connection', require('./routes/connectionRoutes'))
 app.use('/api/chat', require('./routes/chatRoutes'))
+app.use('/api/story', require('./routes/storyRoutes'))
 
 // ! error middleware
 app.use(errorHandler)
