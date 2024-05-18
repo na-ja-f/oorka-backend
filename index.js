@@ -67,4 +67,4 @@ app.use('/api/story', require('./routes/storyRoutes'))
 app.use(errorHandler)
 
 // ! server
-app.listen(port, () => console.log(`server is running on ${port}`))
+server.listen(port, () => console.log(`server is running on ${port}`))
