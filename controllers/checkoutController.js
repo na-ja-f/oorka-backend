@@ -38,8 +38,8 @@ const initialCheckout = asyncHandler(async (req, res) => {
                 },
             ],
             mode: "payment",
-            success_url: `http://localhost:3000/premium/payment-success`,
-            cancel_url: `http://localhost:3000/premium/payment-failed`,
+            success_url: `http://oorka.online/premium/payment-success`,
+            cancel_url: `http://oorka.online/premium/payment-failed`,
             customer_email: user?.email,
             billing_address_collection: "required",
         });
