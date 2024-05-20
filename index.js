@@ -15,7 +15,7 @@ const app = express()
 // ! cors setup
 app.use(
     cors({
-        origin: "http://localhost:3000",
+        origin: "*",
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         credentials: true,
     })
@@ -44,7 +44,7 @@ app.use(
 const server = http.createServer(app)
 
 const io = new Server(server, {
-    cors: { origin: "http://localhost:3000" }
+    cors: { origin: "*" }
 })
 
 // Configure Socket.IO
