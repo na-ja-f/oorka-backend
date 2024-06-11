@@ -7,6 +7,8 @@ const Connections = require('../models/connectionModel')
 const Report = require('../models/reportModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
+const Notification = require('../models/notificationModel')
+
 
 
 // ! create a post
@@ -53,13 +55,15 @@ const addPost = asyncHandler(async (req, res) => {
 // ! gwt all posts
 // ? GET /post/get-post
 const getPosts = asyncHandler(async (req, res) => {
-    const { userId } = req.body
+    const { userId,searchTerm } = req.body
 
     const connections = await Connections.findOne({ userId }, { following: 1 })
     const followingUsers = connections?.following
 
 
-    const usersQuery = { _id: { $in: followingUsers } };
+    const usersQuery = searchTerm
+    ? { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }, { userName: { $regex: searchTerm, $options: "i" } }] }
+    : { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }] };
     const users = await User.find(usersQuery)
     const userIds = users.map((user) => user._id)
 
@@ -69,6 +73,13 @@ const getPosts = asyncHandler(async (req, res) => {
         isDeleted: false
     }
 
+    if (searchTerm) {
+        const regexArray = searchTerm.split(' ').map((tag) => new RegExp(tag, 'i'));
+        postsQuery['$or'] = [
+          { description: { $regex: searchTerm, $options: "i" } },
+          { hashtags: { $in: regexArray } }
+        ];
+      }
 
     const posts = await Post.find(postsQuery)
         .populate({
@@ -155,6 +166,18 @@ const likePost = asyncHandler(async (req, res) => {
             { new: true }
         )
     } else {
+        if (post.userId !== userId) {
+            const newNotification = new Notification({
+                senderId: userId,
+                receiverId: post.userId,
+                message: 'liked your post',
+                link: `/profile`,
+                read: false,
+                postId: postId,
+            });
+    
+            await newNotification.save();
+        }
         await Post.findOneAndUpdate(
             { _id: postId },
             { $push: { likes: userId } },

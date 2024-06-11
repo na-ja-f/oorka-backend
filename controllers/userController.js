@@ -316,6 +316,7 @@ const getUserDetails = asyncHandler(async (req, res) => {
 // ? PATCH /edit-profile
 const editProfile = asyncHandler(async (req, res) => {
     const { userId, image, name, phone, bio, isPrivate } = req.body;
+
     const user = await User.findById(userId)
     if (!user) {
         res.status(404)
@@ -333,7 +334,7 @@ const editProfile = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         _id: user.id,
-        username: user.name,
+        name: user.name,
         email: user.email,
         profileImg: user.profileImg,
         savedPost: user.savedPost,
@@ -348,9 +349,10 @@ const editProfile = asyncHandler(async (req, res) => {
 // ! search users
 // ? POST /search-users
 const searchedUser = asyncHandler(async (req, res) => {
-    const users = await User.find({}, { name: 1, profileImg: 1 });
+    const { searchTerm } = req.body
+    const usersQuery = { name: { $regex: searchTerm, $options: "i" } }
+    const users = await User.find(usersQuery);
     res.status(200).json({ users })
-
 })
 
 // ! get hashtags

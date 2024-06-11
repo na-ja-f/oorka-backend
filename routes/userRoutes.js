@@ -15,9 +15,10 @@ const { registerUser,
     editProfile,
     searchedUser,
     getHashtags,
-    userSuggestions
+    userSuggestions,
 } = require('../controllers/userController')
 const { getPremiumUserData, initialCheckout, validatePayment } = require('../controllers/checkoutController')
+const { getNotifications } = require('../controllers/notificationsController')
 // ! validations
 const { registerValidation, otpValidation, userLoginValidation } = require('../validations/userValidations')
 
@@ -39,6 +40,8 @@ router.post("/user-suggestions",userSuggestions);
 router.post('/get-transactions', getPremiumUserData)
 router.post('/checkout-user', initialCheckout)
 router.post('/validate-payment', validatePayment)
+
+router.post("/get-notifications", getNotifications);
 
 
 module.exports = router

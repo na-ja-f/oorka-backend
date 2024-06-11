@@ -3,6 +3,8 @@ const asyncHandler = require('express-async-handler')
 // ! models
 const User = require('../models/userModel')
 const Connections = require('../models/connectionModel')
+const createNotification = require('../helpers/notificationHelper')
+const Notification = require('../models/notificationModel')
 
 // ! get user connections
 // ? POST /get-connection
@@ -32,8 +34,6 @@ const followUser = asyncHandler(async (req, res) => {
         throw new Error("user not found")
     }
 
-
-
     if (followingUserInfo.isPrivate) {
         await Connections.findOneAndUpdate(
             { userId: followingUser },
@@ -45,6 +45,17 @@ const followUser = asyncHandler(async (req, res) => {
             { $addToSet: { requestSent: followingUser } },
             { upsert: true }
         )
+
+        const newNotification = new Notification({
+            senderId: userId,
+            receiverId: followingUser,
+            message: 'requested to Follow',
+            link: `/users-profile/${followingUser}/`,
+            read: false,
+        });
+
+        await newNotification.save();
+
     } else {
         await Connections.findOneAndUpdate(
             { userId: followingUser },
@@ -56,7 +67,18 @@ const followUser = asyncHandler(async (req, res) => {
             { $addToSet: { following: followingUser } },
             { upsert: true }
         )
-        followed = true
+        followed = true;
+        
+        const newNotification = new Notification({
+            senderId: userId,
+            receiverId: followingUser,
+            message: 'Started Following you',
+            link: `/visit-profile/posts/`,
+            read: false,
+        });
+
+        await newNotification.save();
+
     }
 
 
@@ -80,7 +102,7 @@ const unFollowUser = asyncHandler(async (req, res) => {
     )
 
     let a = await Connections.findById(unfollowingUser)
-    console.log("it is",a);
+    console.log("it is", a);
 
     res.status(200).json({ success: true, message: "User unfollowed succesfully" })
 
@@ -107,6 +129,16 @@ const acceptRequest = asyncHandler(async (req, res) => {
         },
         { new: true }
     )
+    const notificationData = {
+        senderId: userId,
+        receiverId: requestedUser,
+        message: 'accepted your request',
+        link: `/visit-profile/posts/`,
+        read: false,
+
+    };
+
+    createNotification(notificationData)
 
     const connections = await Connections.findOne({ userId })
         .populate({
@@ -159,7 +191,7 @@ const getRequestedUsers = asyncHandler(async (req, res) => {
             select: "name profileImg isVerified"
         })
 
-    res.status(200).json({  requests: requests?.requested })
+    res.status(200).json({ requests: requests?.requested })
 
 })
 

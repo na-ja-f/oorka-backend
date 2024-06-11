@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler')
 const Comment = require('../models/commentModel')
 const Post = require('../models/postModel')
+const Notification = require('../models/notificationModel')
 
 
 // ! get comments count
@@ -20,12 +21,12 @@ const getCommentsCount = asyncHandler(async (req, res) => {
 const getComments = asyncHandler(async (req, res) => {
     const postId = req.params.postId
 
-    const comments = await Comment.find({ postId:postId, isDeleted: false })
+    const comments = await Comment.find({ postId: postId, isDeleted: false })
         .populate({ path: "userId", select: "name profileImg" })
         .populate({ path: "replyComments.userId", select: "name profileImg" })
         .sort({ createdAt: -1 })
 
-    res.status(200).json({comments})
+    res.status(200).json({ comments })
 })
 
 // ! add comment
@@ -36,6 +37,20 @@ const addComment = asyncHandler(async (req, res) => {
     const newComment = await Comment.create({ postId, userId, comment })
 
     await newComment.save();
+
+    const postUploader = await Post.findById(postId);
+    if (postUploader && postUploader.userId !== userId) {
+        const newNotification = new Notification({
+            senderId: userId,
+            receiverId: postUploader.userId,
+            message: 'Commented on your post',
+            link: `/users-profile/${postUploader.userId}/`,
+            read: false,
+        });
+
+        await newNotification.save();
+    }
+
     const comments = await Comment.find({ postId, isDeleted: false })
         .populate({ path: "userId", select: "name profileImg" })
         .populate({ path: "replyComments.userId", select: "name profileImg" })
@@ -62,6 +77,19 @@ const replyComment = asyncHandler(async (req, res) => {
 
     comment.replyComments.push(newReplyComment)
     await comment.save();
+
+    const postUploader = comment.userId;
+    if (postUploader && postUploader !== userId) {
+        const newNotification = new Notification({
+            senderId: userId,
+            receiverId: postUploader,
+            message: 'Replied to your comment',
+            link: `/users-profile/${postUploader}/`,
+            read: false,
+        });
+
+        await newNotification.save();
+    }
 
     const comments = await Comment.find({ postId: comment.postId, isDeleted: false })
         .populate({ path: "userId", select: "name profileImg" })
