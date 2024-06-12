@@ -59,12 +59,14 @@ const getPosts = asyncHandler(async (req, res) => {
 
     const connections = await Connections.findOne({ userId }, { following: 1 })
     const followingUsers = connections?.following
+    // console.log('foll',followingUsers);
 
 
     const usersQuery = searchTerm
-    ? { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }, { userName: { $regex: searchTerm, $options: "i" } }] }
-    : { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }] };
+    ? { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }, { name: { $regex: searchTerm, $options: "i" } }] }
+    : {  _id: { $in: followingUsers }};
     const users = await User.find(usersQuery)
+    // console.log('quer',usersQuery);
     const userIds = users.map((user) => user._id)
 
     const postsQuery = {
