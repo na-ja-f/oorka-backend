@@ -48,7 +48,7 @@ const getUserConversation = asyncHandler(async (req, res) => {
         })
             .populate({
                 path: "members",
-                select: "name profileImg isVerified",
+                select: "name profileImg isVerified lastSeen",
             })
             .sort({ updatedAt: -1 });
 

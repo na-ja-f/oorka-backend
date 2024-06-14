@@ -32,7 +32,7 @@ const login = asyncHandler(async (req, res) => {
 // ? /admin/get-users
 const getUsers = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.page) || 10
+    const limit = parseInt(req.query.limit) || 10
 
     const startIndex = (page - 1) * limit
     const endIndex = page * limit
@@ -59,7 +59,6 @@ const getUsers = asyncHandler(async (req, res) => {
             limit: limit
         }
     }
-
     if (users) {
         res.status(200).json({ users, pagination, totalUsers })
     } else {
