@@ -15,8 +15,8 @@ const app = express()
 // ! cors setup
 app.use(
     cors({
-        origin: "http://localhost:3000",
-        // origin: "https://oorka.online",
+        // origin: "http://localhost:3000",
+        origin: "https://oorka.online",
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         credentials: true,
     })
