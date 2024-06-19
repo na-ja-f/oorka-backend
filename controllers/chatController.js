@@ -74,8 +74,8 @@ const getUserConversation = asyncHandler(async (req, res) => {
 // ! add new message
 // ? POST /chat/add-message
 const addMessage = asyncHandler(async (req, res) => {
-    
     const { conversationId, sender, text } = req.body;
+    console.log('message',conversationId, sender, text);
     let content = text;
     let attachment = null;
 
@@ -106,6 +106,7 @@ const addMessage = asyncHandler(async (req, res) => {
         text: content,
         attachment,
     });
+    console.log('message', newMessage);
     await Conversation.findByIdAndUpdate(
         conversationId,
         { updatedAt: Date.now() },

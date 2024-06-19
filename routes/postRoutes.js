@@ -9,7 +9,9 @@ const { addPost,
     likePost,
     savePost,
     getSavedPost,
-    reportPost
+    reportPost,
+    getCategories,
+    createCategory
 } = require('../controllers/postController')
 const {
     getCommentsCount,
@@ -27,8 +29,10 @@ router.put("/edit-post", protect, updatePost)
 router.get('/user-post/:userId', protect, getUserPost)
 router.post('/like-post', protect, likePost)
 router.post('/save-post', protect, savePost)
+router.post('/create-category', protect, createCategory)
 router.post('/report-post', protect, reportPost)
-router.get('/saved-post/:userId', protect, getSavedPost)
+router.get('/saved-post/:userId/:category', protect, getSavedPost)
+router.get('/get-categories/:userId', protect, getCategories)
 
 
 router.get('/comments-count/:postId', protect, getCommentsCount)

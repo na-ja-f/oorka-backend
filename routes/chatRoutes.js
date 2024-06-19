@@ -16,7 +16,8 @@ const {
     getLastGroupMessages,
     addGroup,
     addGroupMessage,
-    getGroupMessages
+    getGroupMessages,
+    getGroupMembers
 } = require('../controllers/groupChatController')
 
 // * conversation
@@ -40,6 +41,7 @@ router.get('/get-groups/:userId', getGroups)
 // * group messages
 router.post('/add-group-message',upload.single('file'), addGroupMessage)
 router.get('/get-group-messages/:groupId', getGroupMessages)
+router.get('/get-members/:groupId', getGroupMembers)
 router.get('/last-group-messages/', getLastGroupMessages)
 
 

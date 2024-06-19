@@ -8,6 +8,7 @@ const Report = require('../models/reportModel')
 // ! helpers imports
 const generateToken = require('../utils/generateToken')
 const Notification = require('../models/notificationModel')
+const mongoose = require('mongoose')
 
 
 
@@ -55,7 +56,7 @@ const addPost = asyncHandler(async (req, res) => {
 // ! gwt all posts
 // ? GET /post/get-post
 const getPosts = asyncHandler(async (req, res) => {
-    const { userId,searchTerm } = req.body
+    const { userId, searchTerm } = req.body
 
     const connections = await Connections.findOne({ userId }, { following: 1 })
     const followingUsers = connections?.following
@@ -63,8 +64,8 @@ const getPosts = asyncHandler(async (req, res) => {
 
 
     const usersQuery = searchTerm
-    ? { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }, { name: { $regex: searchTerm, $options: "i" } }] }
-    : {  _id: { $in: followingUsers }};
+        ? { $or: [{ isPrivate: false }, { _id: { $in: followingUsers } }, { name: { $regex: searchTerm, $options: "i" } }] }
+        : { _id: { $in: followingUsers } };
     const users = await User.find(usersQuery)
     // console.log('quer',usersQuery);
     const userIds = users.map((user) => user._id)
@@ -78,10 +79,10 @@ const getPosts = asyncHandler(async (req, res) => {
     if (searchTerm) {
         const regexArray = searchTerm.split(' ').map((tag) => new RegExp(tag, 'i'));
         postsQuery['$or'] = [
-          { description: { $regex: searchTerm, $options: "i" } },
-          { hashtags: { $in: regexArray } }
+            { description: { $regex: searchTerm, $options: "i" } },
+            { hashtags: { $in: regexArray } }
         ];
-      }
+    }
 
     const posts = await Post.find(postsQuery)
         .populate({
@@ -177,7 +178,7 @@ const likePost = asyncHandler(async (req, res) => {
                 read: false,
                 postId: postId,
             });
-    
+
             await newNotification.save();
         }
         await Post.findOneAndUpdate(
@@ -204,25 +205,29 @@ const likePost = asyncHandler(async (req, res) => {
 // ! save posts
 // ? POST /post/save-post
 const savePost = asyncHandler(async (req, res) => {
-    const { postId, userId } = req.body;
+    const { postId, userId, category } = req.body;
     const user = await User.findById(userId)
 
     if (!user) {
         res.status(404)
         throw new Error("user not found")
     }
-    const isSaved = user.savedPost.includes(postId);
+    const isSaved = await User.findOne({
+        _id: userId,
+        'savedPosts.post': postId
+    });
+    // const isSaved = user.savedPost.find((post) => post._id === postId);
 
     if (isSaved) {
         await User.findOneAndUpdate(
             { _id: userId },
-            { $pull: { savedPost: postId } },
+            { $pull: { savedPost: { post: postId } } },
             { new: true }
         )
     } else {
         await User.findOneAndUpdate(
             { _id: userId },
-            { $push: { savedPost: postId } },
+            { $push: { savedPost: { post: postId, category: category } } },
             { new: true }
         )
     }
@@ -240,20 +245,87 @@ const savePost = asyncHandler(async (req, res) => {
     });
 })
 
+// ! save posts
+// ? POST /post/save-post
+const createCategory = asyncHandler(async (req, res) => {
+    const { userId, categoryName } = req.body;
+    let user = await User.findById(userId)
+
+    if (!user) {
+        res.status(404)
+        throw new Error("user not found")
+    }
+    const isSaved = await User.findOne({
+        _id: userId,
+        'savedPosts.category': categoryName
+    });
+    // const isSaved = user.savedPost.find((post) => post._id === postId);
+
+    if (isSaved) {
+        throw new Error("category exists")
+    } else {
+      user = await User.findOneAndUpdate(
+            { _id: userId },
+            { $push: { savedPost: { category: categoryName } } },
+            { new: true }
+        )
+    }
+    
+
+    // const categories = await User.distinct('savedPosts.category', { _id: userId });
+    res.status(200).json({
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        profileImg: user.profileImg,
+        savedPost: user.savedPost,
+        bio: user.bio,
+        phone: user.phone,
+        isPrivate: user.isPrivate,
+        isVerified: user.isVerified,
+        token: generateToken(user.id)
+    })
+
+})
+
 // ! like posts
 // ? get /post/get-post
 const getSavedPost = asyncHandler(async (req, res) => {
     const id = req.params.userId
-    const user = await User.findOne({ _id: id, isBlocked: false }, { savedPost: 1, _id: 0 })
-    if (user) {
-        const savedPostIds = user.savedPost;
-        const posts = await Post.find({ _id: { $in: savedPostIds } })
-            .populate("userId")
-        res.status(200).json(posts)
-    } else {
-        res.status(400);
-        throw new Error("User Not Found");
+    const category = req.params.category
+    const user = await User.findById(id).populate({
+        path: 'savedPost',
+        populate: {
+            path: 'post',
+            model: 'Post'
+        }
+    })
+        .populate({
+            path: 'savedPost.post',
+            populate: {
+                path: 'userId',
+                select: 'name profileImg isVerified'
+            }
+        });
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
     }
+
+    const filteredPosts = user.savedPost.filter(item => item.category === category && item.post);
+    // console.log('here');
+    const posts = filteredPosts.map(item => item.post)
+
+    console.log('user', posts);
+    res.status(200).json(posts)
+})
+
+// ! like posts
+// ? get /post/get-post
+const getCategories = asyncHandler(async (req, res) => {
+    const id = req.params.userId
+    const categories = await User.distinct('savedPost.category', { _id: id });
+    res.status(200).json(categories)
 })
 
 // ! report posts
@@ -302,5 +374,7 @@ module.exports = {
     likePost,
     savePost,
     getSavedPost,
-    reportPost
+    reportPost,
+    getCategories,
+    createCategory
 }

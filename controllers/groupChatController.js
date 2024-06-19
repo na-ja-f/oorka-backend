@@ -115,6 +115,23 @@ const getGroupMessages = asyncHandler(async (req, res) => {
     }
 })
 
+// ! get  group messages
+// ? GET /chat/last-group-messages
+const getGroupMembers = asyncHandler(async (req, res) => {
+    try {
+        const groupMembers = await GroupChat.find({
+            _id: req.params.groupId,
+        }).populate({
+            path: "members",
+            select: "name profileImg isVerified",
+        });
+        console.log(groupMembers);
+        res.status(200).json(groupMembers);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+})
+
 // ! get last group messages
 // ? GET /chat/last-group-messages
 const getLastGroupMessages = asyncHandler(async (req, res) => {
@@ -148,5 +165,6 @@ module.exports = {
     getLastGroupMessages,
     addGroup,
     addGroupMessage,
-    getGroupMessages
+    getGroupMessages,
+    getGroupMembers
 }

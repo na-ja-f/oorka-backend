@@ -40,8 +40,6 @@ const socketIo_Config = (io) => {
     //when connect
     socket.on("addUser", (userId) => {
       addUser(userId, socket.id);
-      console.log(users);
-
       io.emit("getUsers", users);
     });
 
@@ -55,7 +53,6 @@ const socketIo_Config = (io) => {
         messageType,
         file
       }) => {
-        console.log(file)
         const user = getUser(receiverId);
         io.to(user?.socketId).emit("getMessage", {
           senderId,
@@ -70,15 +67,14 @@ const socketIo_Config = (io) => {
     socket.on(
       "sendNotification",
       ({
-        postImage,
         receiverId,
         senderName,
         message,
       }) => {
-        console.log(message);
+        // console.log('hihi', receiverId, senderName, message);
         const user = getUser(receiverId);
+        // console.log('user',user);
         io.to(user?.socketId).emit("getNotifications", {
-          postImage,
           senderName,
           message,
         });
@@ -93,7 +89,6 @@ const socketIo_Config = (io) => {
         console.log('typing',user);
         if (user) {
           io.to(user.socketId).emit("userTyping", { senderId });
-          console.log('Emitted userTyping to:', user.socketId);
         }
       }
     );
@@ -103,7 +98,6 @@ const socketIo_Config = (io) => {
       "stopTyping",
       ({ senderId, recieverId }) => {
         const user = getUser(recieverId);
-        console.log('stopped');
         if (user) {
           io.to(user.socketId).emit("userStopTyping", { senderId });
         }

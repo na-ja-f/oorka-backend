@@ -24,6 +24,10 @@ const storySchema = mongoose.Schema({
             type: Boolean,
             default: false
         },
+        isVideo: {
+            type: Boolean,
+            default: false
+        },
     }],
 }, { timestamps: true })
 

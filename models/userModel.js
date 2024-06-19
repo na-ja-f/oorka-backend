@@ -26,9 +26,10 @@ const userSchema = mongoose.Schema({
         type: String,
         default: ""
     },
-    savedPost: {
-        type: Array,
-    },
+    savedPost: [{
+        post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
+        category: { type: String } 
+    }],
     isOnline: {
         type: Boolean,
         default: false

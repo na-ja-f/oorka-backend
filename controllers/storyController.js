@@ -6,16 +6,17 @@ const Story = require('../models/storySchema')
 // ! add story
 // ? POSt /story/add-story
 const addStoryController = asyncHandler(async (req, res) => {
-    const { userId, imageUrls } = req.body;
+    const { userId, imageUrls, isVideo } = req.body;
 
     let story = await Story.findOne({ userId });
     if (!story) {
         story = await Story.create({
             userId,
             stories: [{ imageUrl: imageUrls }],
+            isVideo
         });
     } else {
-        story.stories.push({ imageUrl: imageUrls, views: [] });
+        story.stories.push({ imageUrl: imageUrls, views: [], isVideo });
         await story.save();
     }
 
