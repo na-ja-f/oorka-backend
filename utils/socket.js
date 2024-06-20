@@ -54,11 +54,32 @@ const socketIo_Config = (io) => {
         file
       }) => {
         const user = getUser(receiverId);
+        // console.log('message',user,senderId,receiverId,text);
         io.to(user?.socketId).emit("getMessage", {
           senderId,
           text,
           messageType,
           file
+        });
+      }
+    );
+
+    // send and get story reply
+    socket.on(
+      "sendStoryReply",
+      ({
+        senderId,
+        senderName,
+        receiverId,
+        text,
+        // messageType,
+      }) => {
+        const user = getUser(receiverId);
+        console.log('sto',text);
+        io.to(user?.socketId).emit("getStoryReply", {
+          senderName,
+          text,
+          // messageType,
         });
       }
     );
@@ -71,9 +92,7 @@ const socketIo_Config = (io) => {
         senderName,
         message,
       }) => {
-        // console.log('hihi', receiverId, senderName, message);
         const user = getUser(receiverId);
-        // console.log('user',user);
         io.to(user?.socketId).emit("getNotifications", {
           senderName,
           message,
@@ -86,7 +105,6 @@ const socketIo_Config = (io) => {
       "typing",
       ({ senderId, recieverId }) => {
         const user = getUser(recieverId);
-        console.log('typing',user);
         if (user) {
           io.to(user.socketId).emit("userTyping", { senderId });
         }
