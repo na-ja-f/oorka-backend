@@ -12,8 +12,7 @@ const addStoryController = asyncHandler(async (req, res) => {
     if (!story) {
         story = await Story.create({
             userId,
-            stories: [{ imageUrl: imageUrls }],
-            isVideo
+            stories: [{ imageUrl: imageUrls, isVideo }],
         });
     } else {
         story.stories.push({ imageUrl: imageUrls, views: [], isVideo });
